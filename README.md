@@ -75,7 +75,7 @@ Data scientists prepping for interviews who want a comprehensive linear regressi
 
 ## Inspired By
 
-[Mustafa Yousir's No Nonsense Experimental Design](https://github.com/mustafaysir/no_nonsense_experimental_design) — same spirit, different topic.
+[Mustafa Sir's No Nonsense Experimental Design](https://github.com/mustafaysir/no_nonsense_experimental_design) — same spirit, different topic.
 
 ## License
 
