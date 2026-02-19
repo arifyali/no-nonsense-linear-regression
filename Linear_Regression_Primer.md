@@ -21,7 +21,15 @@
 - $\lambda$ = regularization parameter (Sections 8)
 - $H = X(X^\top X)^{-1}X^\top$ = hat matrix (projection matrix)
 
+## Why This Matters
+
+Linear regression isn't just a teaching tool — it's the foundation that logistic regression, GLMs, and neural networks are built on. It's still used in production across finance, healthcare, insurance, and econometrics, wherever stakeholders need a model they can explain to a regulator or a jury. It's also the most common topic in data science interviews, and for good reason: your ability to reason about regression reveals whether you understand modeling fundamentals. See [Section 10.1](#101-why-linear-regression-in-2026) for the full case.
+
 ## 1. The Linear Model
+
+Everything in this section starts from one assumption: **the data-generating process is linear**. That is, we assume $Y$ really is a linear function of the predictors plus noise. The parameters $\beta_0, \beta_1, \ldots, \beta_p$ only have their clean interpretations ("change in $Y$ per unit change in $x$") *because* we're making this assumption.
+
+If the true relationship isn't linear, OLS still gives you something — it finds the best linear approximation (the projection of $Y$ onto the column space of $X$). But the $\beta$ values become "best linear fit" coefficients, not parameters of the true data-generating process. Whether that distinction matters depends on your goal. We'll formalize these assumptions in [Section 3](#3-assumptions-of-linear-regression).
 
 ### 1.1. Simple Linear Regression
 
@@ -148,7 +156,24 @@ Estimated by substituting $s^2 = \frac{\text{SSE}}{n - p - 1}$ for $\sigma^2$.
 
 ## 3. Assumptions of Linear Regression
 
-The classical assumptions are often remembered as **LINE**: **L**inearity, **I**ndependence, **N**ormality, **E**qual variance. Plus two additional conditions.
+You'll often see the mnemonic **LINE** (**L**inearity, **I**ndependence, **N**ormality, **E**qual variance), plus two additional conditions. But LINE treats all assumptions as equally important — they're not. What follows is organized by how much damage a violation actually does.
+
+**Tier 1 — Structural** (violations bias $\hat{\beta}$; your coefficients are wrong):
+- Linearity (3.1), Exogeneity (3.2)
+
+**Tier 2 — Inferential** (coefficients are still unbiased, but standard errors, p-values, and CIs are wrong):
+- Independence of Errors (3.3), Homoscedasticity (3.4)
+
+**Tier 3 — Technical / Mild** (either a computational prerequisite or largely handled by large samples):
+- Normality of Errors (3.5), No Perfect Multicollinearity (3.6)
+
+If you only have time to check two things, check Tier 1.
+
+---
+
+### Tier 1: Structural Assumptions
+
+*Violations here mean your $\hat{\beta}$ values are biased — they don't estimate what you think they estimate.*
 
 ### 3.1. Linearity
 
@@ -167,7 +192,29 @@ The classical assumptions are often remembered as **LINE**: **L**inearity, **I**
 - Add interaction terms
 - Use a different model (GAM, tree-based)
 
-### 3.2. Independence of Errors
+### 3.2. Exogeneity (Zero Conditional Mean)
+
+**Formal statement**: $\mathbb{E}[\varepsilon \mid X] = 0$. The errors are uncorrelated with the predictors.
+
+**What happens when violated**: OLS estimates are biased. This is the most damaging violation because it undermines the fundamental interpretation of coefficients.
+
+**Common causes**:
+- Omitted variable bias: a relevant variable is left out and is correlated with an included predictor
+- Simultaneity: $X$ causes $Y$ but $Y$ also causes $X$
+- Measurement error in $X$
+
+**How to fix**:
+- Include the omitted variable
+- Instrumental variables (IV) / two-stage least squares
+- Randomized experiments (eliminates endogeneity by design)
+
+---
+
+### Tier 2: Inferential Assumptions
+
+*Violations here don't bias your coefficients, but your standard errors, p-values, and confidence intervals are wrong. You might think a feature is significant when it isn't (or vice versa).*
+
+### 3.3. Independence of Errors
 
 **Formal statement**: $\text{Cov}(\varepsilon_i, \varepsilon_j) = 0$ for all $i \neq j$, or equivalently $\text{Var}(\varepsilon) = \sigma^2 I$.
 
@@ -189,25 +236,6 @@ The classical assumptions are often remembered as **LINE**: **L**inearity, **I**
 - Include time/spatial terms in the model
 - Use time-series specific models (ARIMA)
 
-### 3.3. Normality of Errors
-
-**Formal statement**: $\varepsilon_i \sim \mathcal{N}(0, \sigma^2)$ for all $i$.
-
-**What happens when violated**: OLS estimates are still unbiased and BLUE (Gauss-Markov doesn't require normality). But exact t-tests and F-tests are no longer valid. With large $n$, the Central Limit Theorem kicks in and inference is approximately valid anyway.
-
-**How to detect**:
-- Q-Q plot of residuals
-- Shapiro-Wilk test (for $n < 5000$)
-- Histogram of residuals
-
-**How to fix**:
-- Often not necessary with large $n$ (CLT)
-- Transform $Y$ (log, Box-Cox)
-- Use bootstrapped confidence intervals
-- Use robust standard errors
-
-**Interview note**: This is the *least important* assumption. Many practitioners don't even check it. With $n > 30$, CLT provides good approximations. Focus your energy on linearity and homoscedasticity.
-
 ### 3.4. Equal Variance (Homoscedasticity)
 
 **Formal statement**: $\text{Var}(\varepsilon_i) = \sigma^2$ for all $i$ (constant variance).
@@ -227,38 +255,49 @@ The classical assumptions are often remembered as **LINE**: **L**inearity, **I**
 - Weighted Least Squares (WLS) if you know the variance structure
 - Transform $Y$ (log transform often stabilizes variance)
 
-### 3.5. No Perfect Multicollinearity
+---
+
+### Tier 3: Technical / Mild Assumptions
+
+*One is a computational prerequisite; the other is largely a non-issue with modern sample sizes.*
+
+### 3.5. Normality of Errors
+
+**Formal statement**: $\varepsilon_i \sim \mathcal{N}(0, \sigma^2)$ for all $i$.
+
+**What happens when violated**: OLS estimates are still unbiased and BLUE (Gauss-Markov doesn't require normality). But exact t-tests and F-tests are no longer valid. With large $n$, the Central Limit Theorem kicks in and inference is approximately valid anyway.
+
+**How to detect**:
+- Q-Q plot of residuals
+- Shapiro-Wilk test (for $n < 5000$)
+- Histogram of residuals
+
+**How to fix**:
+- Often not necessary with large $n$ (CLT)
+- Transform $Y$ (log, Box-Cox)
+- Use bootstrapped confidence intervals
+- Use robust standard errors
+
+**Interview note**: This is the *least important* assumption. Many practitioners don't even check it. With $n > 30$, CLT provides good approximations. Focus your energy on linearity and homoscedasticity.
+
+### 3.6. No Perfect Multicollinearity
 
 **Formal statement**: No predictor is an exact linear combination of other predictors. Equivalently, $X^\top X$ is invertible ($\text{rank}(X) = p + 1$).
 
 **Note**: *Near* multicollinearity (high but not perfect correlation) is allowed but problematic — see Section 6.
 
-### 3.6. Exogeneity (Zero Conditional Mean)
-
-**Formal statement**: $\mathbb{E}[\varepsilon \mid X] = 0$. The errors are uncorrelated with the predictors.
-
-**What happens when violated**: OLS estimates are biased. This is the most damaging violation because it undermines the fundamental interpretation of coefficients.
-
-**Common causes**:
-- Omitted variable bias: a relevant variable is left out and is correlated with an included predictor
-- Simultaneity: $X$ causes $Y$ but $Y$ also causes $X$
-- Measurement error in $X$
-
-**How to fix**:
-- Include the omitted variable
-- Instrumental variables (IV) / two-stage least squares
-- Randomized experiments (eliminates endogeneity by design)
+---
 
 ### 3.7. Summary Table
 
-| Assumption | Violated → Effect on $\hat{\beta}$ | Violated → Effect on Inference | Severity | Fix |
+| | Assumption | Violated → Effect on $\hat{\beta}$ | Violated → Effect on Inference | Fix |
 |---|---|---|---|---|
-| Linearity | Biased | Invalid | High | Transform, add terms |
-| Independence | Unbiased | Invalid (SEs wrong) | High | Clustered SEs, GLS |
-| Normality | Unbiased | Approximately valid (large $n$) | Low | CLT, bootstrap |
-| Homoscedasticity | Unbiased | Invalid (SEs wrong) | Medium | Robust SEs, WLS |
-| No multicollinearity | Undefined (can't estimate) | N/A | Critical | Drop/combine variables |
-| Exogeneity | Biased | Invalid | Critical | Include omitted vars, IV |
+| **Tier 1** | Linearity | Biased | Invalid | Transform, add terms |
+| | Exogeneity | Biased | Invalid | Include omitted vars, IV |
+| **Tier 2** | Independence | Unbiased | Invalid (SEs wrong) | Clustered SEs, GLS |
+| | Homoscedasticity | Unbiased | Invalid (SEs wrong) | Robust SEs, WLS |
+| **Tier 3** | Normality | Unbiased | Approximately valid (large $n$) | CLT, bootstrap |
+| | No multicollinearity | Undefined (can't estimate) | N/A | Drop/combine variables |
 
 ## 4. Hypothesis Testing & Inference
 
@@ -673,9 +712,19 @@ In Python (statsmodels): `model.fit(cov_type='HC3')`
 
 ## 10. Practical Considerations
 
-### 10.1. When to Use Linear Regression
+### 10.1. Why Linear Regression in 2026?
 
-**Use it when**:
+In a world of gradient boosting and large language models, linear regression isn't going anywhere. Here's why:
+
+**Interpretability is a requirement, not a nice-to-have.** Regulated industries — finance (SR 11-7, Basel), healthcare (FDA), insurance (actuarial standards) — need models where you can explain exactly what each feature does and why. "The random forest says so" doesn't satisfy a regulator. Linear regression does.
+
+**It's the foundation of modern ML.** Logistic regression is linear regression + a sigmoid link function. Neural networks are stacked linear transformations with nonlinear activations between them. GLMs generalize linear regression to non-normal outcomes. If you don't understand linear regression deeply, you're building on sand.
+
+**It's still used in production.** A/B test analysis (estimating treatment effects), causal inference in econometrics (difference-in-differences, instrumental variables), clinical trial endpoints, insurance pricing (GLMs), and real estate valuation all run on regression. Most "ML" in traditional industries is still some form of linear model.
+
+**It's often good enough.** With thoughtful feature engineering, linear models are competitive with complex models on tabular data — especially when $n$ is small, interpretability matters, or you need confidence intervals on individual predictions. And they train in milliseconds, not hours.
+
+**When to use it:**
 - You need interpretable coefficients ("what drives the outcome?")
 - The relationship is approximately linear (or can be made so with transformations)
 - You have more observations than features ($n > p$)
